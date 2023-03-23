@@ -5,9 +5,9 @@ const getAllCourses = async (req, res) => {
     try {
         console.log(`Function called: getAllCourses`);
         let courses = await db.collection("coursera").find({})
-            .limit(10)
+            .limit(25)
             .toArray()
-        return res.status(200).json({courses: courses});
+        return res.status(200).json(courses);
 
     } catch (e) {
         console.error("Could not getAllCourses from db");
