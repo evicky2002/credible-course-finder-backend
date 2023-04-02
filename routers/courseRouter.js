@@ -4,12 +4,14 @@ app.use(express.json())
 const getAllCourses = async (req, res) => {
     try {
         console.log(`Function called: getAllCourses`);
-        let courses = await db.collection("coursera").find({})
-            .limit(25)
+        let courses = await db.collection("standardised").find({}).limit(10)
             .toArray()
-        return res.status(200).json(courses);
+        let coursesCount = await db.collection("standardised").count()
+
+        return res.status(200).json({status: 'ok', coursesCount: coursesCount, courses: courses});
 
     } catch (e) {
+        console.log(e);
         console.error("Could not getAllCourses from db");
         console.error(e);
         return res.status(500).json({message: "Internal Server Error"});
@@ -18,5 +20,5 @@ const getAllCourses = async (req, res) => {
 
 
 const courseRouter = express.Router();
-courseRouter.route("/courses").get(getAllCourses);
+courseRouter.route("/").get(getAllCourses);
 exports.courseRouter = courseRouter;
