@@ -4,6 +4,9 @@ const getAllCourses = async (req, res) => {
         console.log(`Function called: getAllCourses`);
         console.log(req.body);
         let cond = [];
+        const pageNo = req.body.pageNumber || 1;
+        const itemsPerPage = req.body.itemsPerPage || 20;
+        const providerFilter = req.body.providerFilter || [];
         let searchText = req.body.searchText || "";
 
         //TODO if searchText is empty we should use the interest tags in the user collection to recommend courses
@@ -12,16 +15,29 @@ const getAllCourses = async (req, res) => {
                 $match: {name: {$regex: searchText, $options: "i"}},
             });
         }
+        if (providerFilter.length !== 0) {
+            console.log("no filters");
+            cond.push({
+                $match: {
+                    course_provider: {
+                        $in: providerFilter
+                    }
+                }
+            });
+        }
         let courses = await db
             .collection("standardised")
             .aggregate([
                 ...cond,
                 {
-                    $limit: 10,
+                    $skip: (pageNo - 1) * itemsPerPage,
                 },
+                {
+                    $limit: itemsPerPage,
+                }
+
             ])
             .toArray();
-
         let coursesCount = await db.collection("standardised").count();
 
         return res
@@ -38,6 +54,7 @@ const getAllCourses = async (req, res) => {
 const getTopSkills = async (req, res) => {
     try {
         console.log(`Function called: getTopSkills`);
+
 
         let skills = await db
             .collection("standardised")
