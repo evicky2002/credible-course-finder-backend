@@ -7,42 +7,77 @@ const getAllCourses = async (req, res) => {
         const pageNo = req.body.pageNumber || 1;
         const itemsPerPage = req.body.itemsPerPage || 20;
         const providerFilter = req.body.providerFilter || [];
+        const uid = req.body.uid
         let searchText = req.body.searchText || "";
 
-        //TODO if searchText is empty we should use the interest tags in the user collection to recommend courses
-        if (searchText != "") {
-            cond.push({
-                $match: {name: {$regex: searchText, $options: "i"}},
-            });
-        }
-        if (providerFilter.length !== 0) {
-            console.log("no filters");
-            cond.push({
-                $match: {
-                    course_provider: {
-                        $in: providerFilter
+        if (searchText === "" && providerFilter.length === 0) {
+            console.log("truthy");
+            //TODO if searchText is empty we should use the interest tags in the user collection to recommend courses
+            let user = await db.collection("users").find({uid, uid}).toArray()
+            let interests = user[0].interests
+            console.log(user[0].interests);
+            let courses = await db
+                .collection("standardised")
+                .aggregate([
+                    {
+                        $match: {
+                            'skills': {$in: interests}
+                        }
+
+                    },
+
+                    {
+                        $skip: (pageNo - 1) * itemsPerPage,
+                    },
+                    {
+                        $limit: itemsPerPage,
                     }
-                }
-            });
+
+                ])
+                .toArray();
+            let coursesCount = await db.collection("standardised").count();
+
+            return res
+                .status(200)
+                .json({status: "ok", coursesCount: coursesCount, courses: courses});
+        } else {
+            console.log("falsy");
+
+            if (searchText != "") {
+                cond.push({
+                    $match: {name: {$regex: searchText, $options: "i"}},
+                });
+            }
+            if (providerFilter.length !== 0) {
+                cond.push({
+                    $match: {
+                        course_provider: {
+                            $in: providerFilter
+                        }
+                    }
+                });
+            }
+            let courses = await db
+                .collection("standardised")
+                .aggregate([
+                    ...cond,
+                    {
+                        $skip: (pageNo - 1) * itemsPerPage,
+                    },
+                    {
+                        $limit: itemsPerPage,
+                    }
+
+                ])
+                .toArray();
+            let coursesCount = await db.collection("standardised").count();
+
+            return res
+                .status(200)
+                .json({status: "ok", coursesCount: coursesCount, courses: courses});
         }
-        let courses = await db
-            .collection("standardised")
-            .aggregate([
-                ...cond,
-                {
-                    $skip: (pageNo - 1) * itemsPerPage,
-                },
-                {
-                    $limit: itemsPerPage,
-                }
 
-            ])
-            .toArray();
-        let coursesCount = await db.collection("standardised").count();
 
-        return res
-            .status(200)
-            .json({status: "ok", coursesCount: coursesCount, courses: courses});
     } catch (e) {
         console.log(e);
         console.error("Could not getAllCourses from db");
@@ -88,7 +123,6 @@ const getTopSkills = async (req, res) => {
                 },
             ])
             .toArray();
-        console.log(skills);
 
 
 

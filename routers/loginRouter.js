@@ -5,15 +5,12 @@ const loginUser = async (req, res) => {
         console.log(`Function called: loginUser`);
 
         let uid = req.body.uid
-        console.log(req.body);
         let exisitingUser = await db.collection("users").countDocuments({uid: uid})
         if (exisitingUser > 0) {
-            console.log("existing user");
             return res
                 .status(200)
                 .json({status: "ok", exisitingUser: true});
         } else {
-            console.log("new user");
             let insertUser = await db.collection("users").insertOne({uid: uid})
             return res
                 .status(200)
@@ -37,7 +34,6 @@ const addInterests = async (req, res) => {
         let interests = req.body.selectedInterests
         let insertInterests = await db.collection("users").updateOne({uid, uid},
             {$set: {interests: interests}})
-        console.log(req.body);
         return res
             .status(200)
             .json({status: "ok"});
@@ -58,12 +54,10 @@ const getFavorites = async (req, res) => {
     try {
         console.log(`Function called: getFavorites`);
         let uid = req.body.uid
-        console.log(req.body);
         let fav = await db
             .collection("users")
             .find({uid: uid})
             .toArray();
-        console.log(fav[0].favorites);
         let favObjIds = []
         fav[0].favorites.forEach(element => {
             favObjIds.push(new ObjectId(element))
@@ -108,7 +102,6 @@ const addToFavorites = async (req, res) => {
         // let interests = req.body.selectedInterests
         let insertInterests = await db.collection("users").updateOne({uid, uid},
             {$addToSet: {favorites: courseId}})
-        console.log(req.body);
         return res
             .status(200)
             .json({status: "ok"});
@@ -135,7 +128,6 @@ const removeFromFavorites = async (req, res) => {
         //     {$set: {interests: interests}})
         let insertInterests = await db.collection("users").updateOne({uid, uid},
             {$pull: {favorites: courseId}})
-        console.log(req.body);
         return res
             .status(200)
             .json({status: "ok"});
@@ -152,10 +144,36 @@ const removeFromFavorites = async (req, res) => {
 
 }
 
+const getInterests = async (req, res) => {
+    try {
+        console.log(`Function called: getInterests`);
+        let uid = req.body.uid
+
+        // let interests = req.body.selectedInterests
+        // let insertInterests = await db.collection("users").updateOne({uid, uid},
+        //     {$set: {interests: interests}})
+        let user = await db.collection("users").find({uid, uid}).toArray()
+        return res
+            .status(200)
+            .json({status: "ok", user: user[0]});
+
+
+
+
+    } catch (e) {
+        console.log(e);
+        console.error("Could not getInterests from db");
+        console.error(e);
+        return res.status(500).json({message: "Internal Server Error"});
+    }
+
+}
+
 
 
 const loginRouter = express.Router();
 loginRouter.route("/addInterests").post(addInterests);
+loginRouter.route("/getInterests").post(getInterests);
 loginRouter.route("/removeFromFavorites").post(removeFromFavorites);
 loginRouter.route("/addToFavorites").post(addToFavorites);
 loginRouter.route("/getFavorites").post(getFavorites);
